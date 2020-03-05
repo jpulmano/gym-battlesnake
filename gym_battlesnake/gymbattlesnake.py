@@ -4,6 +4,7 @@ import pathlib
 import random
 from time import sleep
 from gym import spaces
+import torch
 from stable_baselines.common.vec_env import VecEnv
 
 def wrap_function(lib, funcname, restype, argtypes):
@@ -39,7 +40,7 @@ class BattlesnakeEnv(VecEnv):
     def __init__(self, n_threads=4, n_envs=16, opponents=[]):
         # Define action and observation space
         self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Box(low=0,high=255, shape=(LAYER_WIDTH, LAYER_HEIGHT, NUM_LAYERS), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0,high=255, shape=(NUM_LAYERS, LAYER_WIDTH, LAYER_HEIGHT), dtype=np.uint8)
         self.n_opponents = len(opponents)
         self.opponents = opponents
         self.n_threads = n_threads
@@ -57,8 +58,8 @@ class BattlesnakeEnv(VecEnv):
         # Get observations for each opponent and predict actions
         for i in range(1,self.n_opponents+1):
             obss = self.getobs(i)
-            acts,_ = self.opponents[i-1].predict(obss, deterministic=True)
-            np.copyto(self.getact(i), np.asarray(acts,dtype=np.uint8))
+            acts,_ = self.opponents[i-1].predict(torch.tensor(obss, dtype=torch.float32).to('cuda'), deterministic=True)
+            np.copyto(self.getact(i), np.asarray(acts.cpu().squeeze(0), dtype=np.uint8).flatten())
         # Step game
         env_step(self.ptr)
 
@@ -90,7 +91,7 @@ class BattlesnakeEnv(VecEnv):
 
     def getobs(self, agent_i):
         obsptr = env_obsptr(self.ptr, agent_i)
-        return np.ctypeslib.as_array(obsptr, shape=(self.n_envs, LAYER_WIDTH, LAYER_HEIGHT, NUM_LAYERS))
+        return np.ctypeslib.as_array(obsptr, shape=(self.n_envs, NUM_LAYERS, LAYER_WIDTH, LAYER_HEIGHT))
 
     def getact(self, agent_i):
         actptr = env_actptr(self.ptr, agent_i)
