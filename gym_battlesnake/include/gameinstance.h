@@ -11,7 +11,14 @@
 #define PLAYER_STARTING_LENGTH 3
 #define FOOD_ID 1
 
+#define DEATH_NONE 0u
+#define DEATH_EATEN 1u
+#define DEATH_STARVE 2u
+#define DEATH_BODY 2u // This is the worst -- wall collision
+
 using Tile = std::pair<unsigned, unsigned>;
+using Position = std::pair<int, int>;
+using Node = std::pair<Position, int>;
 namespace std {
 	template<>
 	struct hash<Tile> {
@@ -28,6 +35,7 @@ struct Player {
 	unsigned health_;
 	char move_;
 	unsigned turn_;
+	unsigned death_reason_;
 	std::list<Tile> body_;
 	bool operator==(const Player& a) const { return id_ == a.id_; }
 };
@@ -35,11 +43,11 @@ struct Player {
 /* board, players, food, width, height */
 using State = std::tuple<const std::vector<unsigned>&, const std::unordered_map<unsigned, Player>&, const std::unordered_set<Tile>&, unsigned, unsigned>;
 /* width, height, num players, num food */
-using Parameters = std::tuple<unsigned, unsigned, unsigned, unsigned>;
+using Parameters = std::tuple<unsigned, unsigned, unsigned, float>;
 
 class GameInstance {
 public:
-	GameInstance(unsigned board_width, unsigned board_length, unsigned num_players, unsigned num_food);
+	GameInstance(unsigned board_width, unsigned board_length, unsigned num_players, float food_spawn_chance);
 
 	GameInstance(const GameInstance&) = delete;
 	GameInstance(GameInstance&&) = delete;
@@ -55,7 +63,7 @@ public:
 	}
 
 	Parameters getparameters() const {
-		return std::make_tuple(board_width_, board_length_, num_players_, num_food_);
+		return std::make_tuple(board_width_, board_length_, num_players_, food_spawn_chance_);
 	}
 
 	bool setplayermove(unsigned id, char m) {
@@ -103,7 +111,7 @@ private:
 	unsigned board_width_;
 	unsigned board_length_;
 	unsigned num_players_;
-	unsigned num_food_;
+	float food_spawn_chance_;
 
 	// State parameters
 	bool over_;

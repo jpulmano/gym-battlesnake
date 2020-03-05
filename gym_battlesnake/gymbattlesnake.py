@@ -1,6 +1,7 @@
 import numpy as np
 import ctypes
 import pathlib
+import random
 from time import sleep
 from gym import spaces
 from stable_baselines.common.vec_env import VecEnv
@@ -13,27 +14,28 @@ def wrap_function(lib, funcname, restype, argtypes):
     return func
 
 class info(ctypes.Structure):
-    _fields_ = [('health', ctypes.c_uint), ('length', ctypes.c_uint), ('turn', ctypes.c_uint),
+    _fields_ = [('health', ctypes.c_uint), ('length', ctypes.c_uint), ('turn', ctypes.c_uint), ('alive_count', ctypes.c_uint), ('death_reason', ctypes.c_uint),
         ('alive', ctypes.c_bool), ('ate', ctypes.c_bool), ('over', ctypes.c_bool)]
 
-gamelib = ctypes.cdll.LoadLibrary(str(pathlib.Path(__file__).with_name('libgymbattlesnake.so')))
+gamelib = None
+try:
+    gamelib = ctypes.cdll.LoadLibrary(str(pathlib.Path(__file__).with_name('libgymbattlesnake.so')))
+except:
+    gamelib = ctypes.cdll.LoadLibrary(str(pathlib.Path(__file__).with_name('libgymbattlesnake.dylib')))
 env_new = wrap_function(gamelib, 'env_new', ctypes.c_void_p, [ctypes.c_uint,ctypes.c_uint,ctypes.c_uint])
 env_delete = wrap_function(gamelib, 'env_delete', None, [ctypes.c_void_p])
 env_reset = wrap_function(gamelib, 'env_reset', None, [ctypes.c_void_p])
 env_step = wrap_function(gamelib, 'env_step', None, [ctypes.c_void_p])
-env_render = wrap_function(gamelib, 'env_render', None, [ctypes.c_void_p])
 env_obsptr = wrap_function(gamelib, 'env_getobspointer', ctypes.POINTER(ctypes.c_ubyte), [ctypes.c_void_p,ctypes.c_uint])
 env_actptr = wrap_function(gamelib, 'env_getactpointer', ctypes.POINTER(ctypes.c_ubyte), [ctypes.c_void_p,ctypes.c_uint])
 env_infoptr = wrap_function(gamelib, 'env_getinfopointer', ctypes.POINTER(info), [ctypes.c_void_p])
 
-NUM_LAYERS = 6
+NUM_LAYERS = 12
 LAYER_WIDTH = 39
 LAYER_HEIGHT = 39
 
 class BattlesnakeEnv(VecEnv):
     """Multi-Threaded Multi-Agent Snake Environment"""
-    metadata = {'render.modes': ['human']}
-
     def __init__(self, n_threads=4, n_envs=16, opponents=[]):
         # Define action and observation space
         self.action_space = spaces.Discrete(4)
@@ -68,17 +70,15 @@ class BattlesnakeEnv(VecEnv):
 
         infoptr = env_infoptr(self.ptr)
         for i in range(self.n_envs):
-            if infoptr[i].ate:
-                rews[i] += 0.1
             if infoptr[i].over:
                 dones[i] = True
                 info[i]['episode'] = {}
                 if infoptr[i].alive:
-                    rews[i] += 1.0 if infoptr[i].turn > 100 else 0.0
-                    info[i]['episode']['r'] = 1.0 if infoptr[i].turn > 100 else 0.0
+                    rews[i] += 1.0
+                    info[i]['episode']['r'] = rews[i]
                 else:
                     rews[i] -= 1.0
-                    info[i]['episode']['r'] = -1.0
+                    info[i]['episode']['r'] = rews[i]
                 info[i]['episode']['l'] = infoptr[i].turn
 
         return self.getobs(0), rews, dones, info
@@ -87,9 +87,6 @@ class BattlesnakeEnv(VecEnv):
         env_reset(self.ptr)
         return self.getobs(0)
 
-    def render(self):
-        env_render(self.ptr)
-        sleep(0.1)
 
     def getobs(self, agent_i):
         obsptr = env_obsptr(self.ptr, agent_i)

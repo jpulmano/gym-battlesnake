@@ -6,6 +6,8 @@
 build/
 dist/
 board/
+*.dylib
+__pycache__/
 *.out
 *.test
 *.pyc
