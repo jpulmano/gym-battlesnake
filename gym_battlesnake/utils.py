@@ -1,3 +1,5 @@
+import numpy as np
+
 NUM_LAYERS = 12
 LAYER_WIDTH = 39
 LAYER_HEIGHT = 39
