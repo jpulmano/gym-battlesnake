@@ -75,7 +75,6 @@ def make_input(data):
 
 def _fill_ownership(data, obs, head):
     """ To match the format from gym-battlesnake """
-    print("Starting fill")
     grid = np.zeros((39,39,5), dtype=np.int32)
     # 0: distance
     # 1: owner
@@ -153,5 +152,3 @@ def _fill_ownership(data, obs, head):
                     assign(obs, head, x, y, 6, 1)
                 else:
                     assign(obs, head, x, y, 7, 1)
-
-    print("Done fill")
