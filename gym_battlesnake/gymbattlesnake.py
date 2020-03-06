@@ -65,7 +65,7 @@ class ParallelBattlesnakeEnv(VecEnv):
         obs = torch.tensor(obs, dtype=torch.float32).to(self.device)
         with torch.no_grad():
             acts,_ = self.opponent.predict(obs, deterministic=True)
-        acts = acts.view(self.n_opponents, self.n_envs).cpu().detach().numpy().astype(np.uint8)
+        acts = acts.view(self.n_opponents, self.n_envs).cpu().detach().numpy().flatten().astype(np.uint8)
         for i in range(self.n_opponents):
             np.copyto(self.getact(i+1), acts[i].flatten())
             
