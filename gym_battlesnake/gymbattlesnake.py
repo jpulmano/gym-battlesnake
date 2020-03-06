@@ -108,7 +108,7 @@ class ParallelBattlesnakeEnv(VecEnv):
 
 class BattlesnakeEnv(VecEnv):
     """Multi-Threaded Multi-Agent Snake Environment"""
-    def __init__(self, n_threads=4, n_envs=16, opponents=[], device='cpu'):
+    def __init__(self, n_threads=4, n_envs=16, opponents=[], device=torch.device('cpu')):
         # Define action and observation space
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=0,high=255, shape=(NUM_LAYERS, LAYER_WIDTH, LAYER_HEIGHT), dtype=np.uint8)
