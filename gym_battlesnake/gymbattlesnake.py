@@ -65,7 +65,7 @@ class ParallelBattlesnakeEnv(VecEnv):
         obs = torch.tensor(obs, dtype=torch.float32).to(self.device)
         with torch.no_grad():
             acts,_ = self.opponent.predict(obs, deterministic=True)
-        acts = acts.view(self.n_opponents, self.n_envs).cpu().detach().numpy().flatten().astype(np.uint8)
+        acts = acts.view(self.n_opponents, self.n_envs).cpu().detach().numpy().astype(np.uint8)
         for i in range(self.n_opponents):
             np.copyto(self.getact(i+1), acts[i].flatten())
             
@@ -132,7 +132,7 @@ class BattlesnakeEnv(VecEnv):
             for i in range(1,self.n_opponents+1):
                 obss = torch.tensor(self.getobs(i), dtype=torch.float32).to(self.device)
                 acts,_ = self.opponents[i-1].predict(obss, deterministic=True)
-                np.copyto(self.getact(i), acts.detach().cpu().numpy().astype(np.uint8))
+                np.copyto(self.getact(i), acts.detach().cpu().numpy().flatten().astype(np.uint8))
         # Step game
         env_step(self.ptr)
 
