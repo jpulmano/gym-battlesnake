@@ -113,7 +113,7 @@ class BattlesnakeEnv(VecEnv):
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=0,high=255, shape=(NUM_LAYERS, LAYER_WIDTH, LAYER_HEIGHT), dtype=np.uint8)
         self.n_opponents = len(opponents)
-        self.opponent = opponent
+        self.opponents = opponents
         self.n_threads = n_threads
         self.n_envs = n_envs
         self.device = device
