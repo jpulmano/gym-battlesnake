@@ -37,12 +37,12 @@ LAYER_HEIGHT = 39
 
 class BattlesnakeEnv(VecEnv):
     """Multi-Threaded Multi-Agent Snake Environment"""
-    def __init__(self, n_threads=4, n_envs=16, opponents=[], device='cpu'):
+    def __init__(self, n_threads=4, n_envs=16, n_opponents=7, opponent=None, device='cpu'):
         # Define action and observation space
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=0,high=255, shape=(NUM_LAYERS, LAYER_WIDTH, LAYER_HEIGHT), dtype=np.uint8)
-        self.n_opponents = len(opponents)
-        self.opponents = opponents
+        self.n_opponents = n_opponents
+        self.opponent = opponent
         self.n_threads = n_threads
         self.n_envs = n_envs
         self.device = device
@@ -57,10 +57,17 @@ class BattlesnakeEnv(VecEnv):
         # Write player actions into buffer
         np.copyto(self.getact(0), np.asarray(actions,dtype=np.uint8))
         # Get observations for each opponent and predict actions
+        all_obs = []
         for i in range(1,self.n_opponents+1):
-            obss = torch.tensor(self.getobs(i), dtype=torch.float32).to(self.device)
-            acts,_ = self.opponents[i-1].predict(obss, deterministic=True)
-            np.copyto(self.getact(i), np.asarray(acts.cpu().squeeze(0), dtype=np.uint8).flatten())
+            all_obs.append(self.getobs(i))
+        obs = np.vstack(all_obs)
+        obs = torch.tensor(obs, dtype=torch.float32).to(self.device)
+        with torch.no_grad():
+            acts,_ = self.opponent.predict(obs, deterministic=True)
+        acts = acts.view(self.n_opponents, self.n_envs).cpu().detach().numpy().astype(np.uint8)
+        for i in range(self.n_opponents):
+            np.copyto(self.getact(i+1), acts[i].flatten())
+            
         # Step game
         env_step(self.ptr)
 
