@@ -112,7 +112,7 @@ class BattlesnakeEnv(VecEnv):
         # Define action and observation space
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=0,high=255, shape=(NUM_LAYERS, LAYER_WIDTH, LAYER_HEIGHT), dtype=np.uint8)
-        self.n_opponents = n_opponents
+        self.n_opponents = len(opponents)
         self.opponent = opponent
         self.n_threads = n_threads
         self.n_envs = n_envs
