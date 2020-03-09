@@ -80,6 +80,8 @@ class ParallelBattlesnakeEnv(VecEnv):
 
         infoptr = env_infoptr(self.ptr)
         for i in range(self.n_envs):
+            if infoptr[i].ate:
+                rews[i] += 0.01
             if infoptr[i].over:
                 dones[i] = True
                 info[i]['episode'] = {}
