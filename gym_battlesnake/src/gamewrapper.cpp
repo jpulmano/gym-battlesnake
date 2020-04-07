@@ -10,7 +10,7 @@
 #include "gameinstance.h"
 #include "threadpool.h"
 
-#define NUM_LAYERS 12
+#define NUM_LAYERS 10
 #define LAYER_WIDTH 39
 #define LAYER_HEIGHT 39
 #define OBS_SIZE NUM_LAYERS *LAYER_WIDTH *LAYER_HEIGHT
@@ -62,12 +62,10 @@ class GameWrapper {
         layer3: snake length >= player {0,1}
         layer4: food {0,1}
         layer5: gameboard {0,1}
-        layer6: player_owned {0,1}
-        layer7: enemy_owned {0,1}
-        layer8: head_mask {0,1}
-        layer9: double_tail_mask {0,1}
-        layer10: snake bodies >= us {0,1}
-        layer11: snake bodies < us {0,1}
+        layer6: head_mask {0,1}
+        layer7: double_tail_mask {0,1}
+        layer8: snake bodies >= us {0,1}
+        layer9: snake bodies < us {0,1}
     */
     auto &players = std::get<1>(gamestate);
     Tile head;
@@ -95,10 +93,13 @@ class GameWrapper {
     };
 
     unsigned playersize = it->second.body_.size();
-    assign(it->second.body_.front(), 8, 1);
+    // Assign head_mask
+    assign(it->second.body_.front(), 6, 1);
+
     for (const auto &p : players) {
       if (!p.second.alive_)
         continue;
+      // Assign health on head
       assign(p.second.body_.front(), 0, p.second.health_);
       unsigned i = 0;
       Tile tail_1, tail_2;
@@ -112,20 +113,18 @@ class GameWrapper {
 
           // Check if the tails are the same
           if (tail_1.first == tail_2.first && tail_1.second == tail_2.second) {
-            assign(*cit, 9, 1);
+            // Double tail
+            assign(*cit, 7, 1);
           }
         }
         assign(*cit, 1, 1);
         assign(*cit, 2, std::min(++i, static_cast<unsigned>(255)));
         if (p.second.id_ != player_id) {
           if (p.second.body_.size() >= playersize) {
-            assign(*cit, 10,
-                   1 + p.second.body_.size() -
-                       playersize); // Store the difference
+            assign(*cit, 8, 1 + p.second.body_.size() - playersize); // Store the difference
           }
           if (p.second.body_.size() < playersize) {
-            assign(*cit, 11,
-                   -p.second.body_.size() + playersize); // Store the difference
+            assign(*cit, 9, -p.second.body_.size() + playersize); // Store the difference
           }
         }
       }
@@ -141,132 +140,6 @@ class GameWrapper {
     for (int x = 0; x < static_cast<int>(std::get<3>(gamestate)); ++x) {
       for (int y = 0; y < static_cast<int>(std::get<4>(gamestate)); ++y) {
         assign({x, y}, 5, 1);
-      }
-    }
-
-    std::deque<Node> queue;
-
-    // Set up the grid to search with the player bodies. We'll now do a BFS to
-    // compute ownership
-    for (const auto &p : players) {
-      if (!p.second.alive_)
-        continue;
-
-      // For each body point, mark the grid
-      for (auto cit = p.second.body_.crbegin(); cit != p.second.body_.crend();
-           ++cit) {
-        auto x = (*cit).first;
-        auto y = (*cit).second;
-        grid[x][y].has_body_segment = true;
-      }
-    }
-
-    // First, we want to find the owned areas of each player, then we'll run a
-    // bfs from each possible player move and count the spaces, returning that
-    // as a number
-    for (const auto &p : players) {
-      if (!p.second.alive_)
-        continue;
-
-      // Clear the seen graph
-      memset(seen, 0, sizeof(seen));
-
-      auto p_head = p.second.body_.front();
-
-      // Add the player head
-      queue.emplace_back(
-          std::make_pair(std::make_pair(static_cast<int>(p_head.first),
-                                        static_cast<int>(p_head.second)),
-                         0));
-
-      seen[p_head.first][p_head.second] = true;
-
-      while (!queue.empty()) {
-        // Get the next node in the queue
-        auto node = queue.front();
-        queue.pop_front();
-
-        // Mark this tile as seen
-        seen[node.first.first][node.first.second] = true;
-
-        Node up = std::make_pair(
-            std::make_pair(node.first.first, node.first.second - 1),
-            node.second + 1);
-        Node right = std::make_pair(
-            std::make_pair(node.first.first + 1, node.first.second),
-            node.second + 1);
-        Node down = std::make_pair(
-            std::make_pair(node.first.first, node.first.second + 1),
-            node.second + 1);
-        Node left = std::make_pair(
-            std::make_pair(node.first.first - 1, node.first.second),
-            node.second + 1);
-
-        // Check up
-        if (up.first.second >= 0 && !seen[up.first.first][up.first.second]) {
-          if (grid[up.first.first][up.first.second].has_body_segment == false) {
-            seen[up.first.first][up.first.second] = true;
-            queue.emplace_back(up);
-          }
-        }
-        // Check down
-        if (down.first.second < static_cast<int>(std::get<4>(gamestate)) &&
-            !seen[down.first.first][down.first.second]) {
-          if (grid[down.first.first][down.first.second].has_body_segment ==
-              false) {
-            seen[down.first.first][down.first.second] = true;
-            queue.emplace_back(down);
-          }
-        }
-        // Check right
-        if (right.first.first < static_cast<int>(std::get<3>(gamestate)) &&
-            !seen[right.first.first][right.first.second]) {
-          if (grid[right.first.first][right.first.second].has_body_segment ==
-              false) {
-            seen[right.first.first][right.first.second] = true;
-            queue.emplace_back(right);
-          }
-        }
-        // Check left
-        if (left.first.first >= 0 &&
-            !seen[left.first.first][left.first.second]) {
-          if (grid[left.first.first][left.first.second].has_body_segment ==
-              false) {
-            seen[left.first.first][left.first.second] = true;
-            queue.emplace_back(left);
-          }
-        }
-
-        auto pos = &grid[node.first.first][node.first.second];
-        if (!pos->visited) {
-          // Set the owner and distance
-          pos->owner = p.second.id_;
-          pos->distance = node.second;
-
-          // First time
-          pos->visited = true;
-        } else if (node.second < pos->distance) {
-          // this node is closer
-          pos->owner = p.second.id_;
-          pos->distance = node.second;
-          pos->contested = false;
-        } else if (pos->distance == node.second) {
-          if (pos->owner != p.second.id_) {
-            pos->contested = true;
-          }
-        }
-      }
-    }
-
-    for (int x = 0; x < static_cast<int>(std::get<3>(gamestate)); ++x) {
-      for (int y = 0; y < static_cast<int>(std::get<4>(gamestate)); ++y) {
-        if (!grid[x][y].contested && grid[x][y].visited) {
-          if (grid[x][y].owner == player_id) {
-            assign({x, y}, 6, 1);
-          } else {
-            assign({x, y}, 7, 1);
-          }
-        }
       }
     }
   }
