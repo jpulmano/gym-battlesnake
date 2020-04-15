@@ -26,14 +26,6 @@ struct info {
   bool over_;
 };
 
-struct GridInfo {
-  int distance;
-  unsigned owner;
-  bool has_body_segment;
-  bool contested;
-  bool visited;
-};
-
 class GameWrapper {
 
   /* Randomly* orient the board by flipping in x and y */
@@ -75,12 +67,6 @@ class GameWrapper {
     } else {
       std::abort();
     }
-
-    GridInfo grid[39][39];
-    bool seen[39][39];
-
-    // Clear the grid
-    memset(grid, 0, sizeof(grid));
 
     auto assign = [this, model_i, env_i, head, ori](const Tile &xy, unsigned l,
                                                     uint8_t val) {
