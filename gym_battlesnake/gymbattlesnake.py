@@ -31,7 +31,7 @@ env_obsptr = wrap_function(gamelib, 'env_getobspointer', ctypes.POINTER(ctypes.c
 env_actptr = wrap_function(gamelib, 'env_getactpointer', ctypes.POINTER(ctypes.c_ubyte), [ctypes.c_void_p,ctypes.c_uint])
 env_infoptr = wrap_function(gamelib, 'env_getinfopointer', ctypes.POINTER(info), [ctypes.c_void_p])
 
-NUM_LAYERS = 10
+NUM_LAYERS = 17
 LAYER_WIDTH = 39
 LAYER_HEIGHT = 39
 

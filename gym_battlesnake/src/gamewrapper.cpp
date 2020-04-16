@@ -10,7 +10,7 @@
 #include "gameinstance.h"
 #include "threadpool.h"
 
-#define NUM_LAYERS 10
+#define NUM_LAYERS 17 // 7 layers indicating the number of alive opponents
 #define LAYER_WIDTH 39
 #define LAYER_HEIGHT 39
 #define OBS_SIZE NUM_LAYERS *LAYER_WIDTH *LAYER_HEIGHT
@@ -58,6 +58,7 @@ class GameWrapper {
         layer7: double_tail_mask {0,1}
         layer8: snake bodies >= us {0,1}
         layer9: snake bodies < us {0,1}
+        layer10-16: Alive count
     */
     auto &players = std::get<1>(gamestate);
     Tile head;
@@ -82,9 +83,11 @@ class GameWrapper {
     // Assign head_mask
     assign(it->second.body_.front(), 6, 1);
 
+    auto alive_count = 0;
     for (const auto &p : players) {
       if (!p.second.alive_)
         continue;
+      alive_count++;
       // Assign health on head
       assign(p.second.body_.front(), 0, p.second.health_);
       unsigned i = 0;
@@ -119,6 +122,9 @@ class GameWrapper {
                p.second.body_.size() >= playersize ? 1 : 0);
     }
 
+    // Subtract 1 from alive_count to get the layer index
+    alive_count -= 2;
+
     auto &food = std::get<2>(gamestate);
     for (const auto &xy : food)
       assign(xy, 4, 1);
@@ -126,6 +132,8 @@ class GameWrapper {
     for (int x = 0; x < static_cast<int>(std::get<3>(gamestate)); ++x) {
       for (int y = 0; y < static_cast<int>(std::get<4>(gamestate)); ++y) {
         assign({x, y}, 5, 1);
+        // Signal how many players are alive
+        assign({x, y}, 10 + alive_count, 1);
       }
     }
   }
