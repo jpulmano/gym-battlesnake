@@ -11,8 +11,8 @@
 #include "threadpool.h"
 
 #define NUM_LAYERS 17 // 7 layers indicating the number of alive opponents
-#define LAYER_WIDTH 39
-#define LAYER_HEIGHT 39
+#define LAYER_WIDTH 23
+#define LAYER_HEIGHT 23
 #define OBS_SIZE NUM_LAYERS *LAYER_WIDTH *LAYER_HEIGHT
 
 struct info {
