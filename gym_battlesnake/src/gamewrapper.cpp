@@ -29,8 +29,8 @@ struct info {
 class GameWrapper {
 
   /* Randomly* orient the board by flipping in x and y */
-  unsigned orientation(unsigned game_id, unsigned turn, unsigned player_id, unsigned fixed) {
-    if (fixed > 0u) {
+  unsigned orientation(unsigned game_id, unsigned turn, unsigned player_id, bool fixed) {
+    if (fixed) {
       return 0u;
     }
 
@@ -143,8 +143,8 @@ class GameWrapper {
   }
 
 public:
-  GameWrapper(unsigned n_threads, unsigned n_envs, unsigned n_models, unsigned fixed_orientation)
-      : n_threads_(n_threads), n_envs_(n_envs), n_models_(n_models), fixed_orientation_(fixed_orientation),
+  GameWrapper(unsigned n_threads, unsigned n_envs, unsigned n_models, bool fixed_orientation)
+      : n_threads_(n_threads), n_envs_(n_envs), n_models_(n_models),
         threadpool_(n_threads) {
     // 1. Create envs
     envs_.resize(n_envs, nullptr);
@@ -152,6 +152,7 @@ public:
     obss_.resize(n_models * n_envs * OBS_SIZE);
     acts_.resize(n_models * n_envs);
     info_.resize(n_envs);
+    fixed_orientation_ = fixed_orientation;
     // 3. Reset envs
     reset();
   }
@@ -266,8 +267,9 @@ public:
     threadpool_.wait();
   }
 
-  unsigned n_threads_, n_envs_, n_models_, fixed_orientation_;
+  unsigned n_threads_, n_envs_, n_models_;
   ThreadPool threadpool_;
+  bool fixed_orientation_;
   std::vector<std::shared_ptr<GameInstance>> envs_;
   std::vector<uint8_t> obss_;
   std::vector<uint8_t> acts_;
@@ -275,7 +277,7 @@ public:
 };
 
 extern "C" {
-GameWrapper *env_new(unsigned n_threads, unsigned n_envs, unsigned n_models, unsigned fixed_orientation) {
+GameWrapper *env_new(unsigned n_threads, unsigned n_envs, unsigned n_models, bool fixed_orientation) {
   return new GameWrapper(n_threads, n_envs, n_models, fixed_orientation);
 }
 void env_delete(GameWrapper *p) { delete p; }
