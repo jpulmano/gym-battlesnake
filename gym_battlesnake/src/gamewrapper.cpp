@@ -143,7 +143,7 @@ class GameWrapper {
   }
 
 public:
-  GameWrapper(unsigned n_threads, unsigned n_envs, unsigned n_models, bool fixed_orientation)
+  GameWrapper(unsigned n_threads, unsigned n_envs, unsigned n_models, unsigned fixed_orientation)
       : n_threads_(n_threads), n_envs_(n_envs), n_models_(n_models),
         threadpool_(n_threads), fixed_orientation_(fixed_orientation) {
     // 1. Create envs
