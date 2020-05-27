@@ -30,12 +30,13 @@ class GameWrapper {
 
   /* Randomly* orient the board by flipping in x and y */
   unsigned orientation(unsigned game_id, unsigned turn, unsigned player_id) {
-    if (fixed_orientation_) {
-      return 0;
-    }
+    return 0U;
+    // if (fixed_orientation_) {
+    //   return 0U;
+    // }
 
-    return std::hash<unsigned>{}(game_id) ^ player_id ^
-           std::hash<unsigned>{}(turn);
+    // return std::hash<unsigned>{}(game_id) ^ player_id ^
+    //        std::hash<unsigned>{}(turn);
   }
 
   char getaction(unsigned model_i, unsigned env_i, unsigned ori) {

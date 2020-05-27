@@ -23,7 +23,7 @@ try:
     gamelib = ctypes.cdll.LoadLibrary(str(pathlib.Path(__file__).with_name('libgymbattlesnake.so')))
 except:
     gamelib = ctypes.cdll.LoadLibrary(str(pathlib.Path(__file__).with_name('libgymbattlesnake.dylib')))
-env_new = wrap_function(gamelib, 'env_new', ctypes.c_void_p, [ctypes.c_uint,ctypes.c_uint,ctypes.c_uint, ctypes.c_bool])
+env_new = wrap_function(gamelib, 'env_new', ctypes.c_void_p, [ctypes.c_uint,ctypes.c_uint,ctypes.c_uint,ctypes.c_bool])
 env_delete = wrap_function(gamelib, 'env_delete', None, [ctypes.c_void_p])
 env_reset = wrap_function(gamelib, 'env_reset', None, [ctypes.c_void_p])
 env_step = wrap_function(gamelib, 'env_step', None, [ctypes.c_void_p])
@@ -47,6 +47,7 @@ class ParallelBattlesnakeEnv(VecEnv):
         self.n_threads = n_threads
         self.n_envs = n_envs
         self.device = device
+        self.fixed_orientation = fixed_orientation
         self.ptr = env_new(self.n_threads, self.n_envs, self.n_opponents+1, self.fixed_orientation)
         super(ParallelBattlesnakeEnv, self).__init__(self.n_envs, self.observation_space, self.action_space)
         self.reset()
