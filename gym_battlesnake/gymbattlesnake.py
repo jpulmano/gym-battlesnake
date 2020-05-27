@@ -23,7 +23,7 @@ try:
     gamelib = ctypes.cdll.LoadLibrary(str(pathlib.Path(__file__).with_name('libgymbattlesnake.so')))
 except:
     gamelib = ctypes.cdll.LoadLibrary(str(pathlib.Path(__file__).with_name('libgymbattlesnake.dylib')))
-env_new = wrap_function(gamelib, 'env_new', ctypes.c_void_p, [ctypes.c_uint,ctypes.c_uint,ctypes.c_uint])
+env_new = wrap_function(gamelib, 'env_new', ctypes.c_void_p, [ctypes.c_uint,ctypes.c_uint,ctypes.c_uint, ctypes.c_bool])
 env_delete = wrap_function(gamelib, 'env_delete', None, [ctypes.c_void_p])
 env_reset = wrap_function(gamelib, 'env_reset', None, [ctypes.c_void_p])
 env_step = wrap_function(gamelib, 'env_step', None, [ctypes.c_void_p])
@@ -38,7 +38,7 @@ LAYER_HEIGHT = 23
 class ParallelBattlesnakeEnv(VecEnv):
     """Multi-Threaded Multi-Agent Snake Environment"""
     """ Parallel version assumes self play with same policy, so it can batch observation calculations better """
-    def __init__(self, n_threads=4, n_envs=16, n_opponents=7, opponent=None, device='cpu'):
+    def __init__(self, n_threads=4, n_envs=16, n_opponents=7, opponent=None, device='cpu', fixed_orientation=False):
         # Define action and observation space
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=0,high=255, shape=(NUM_LAYERS, LAYER_WIDTH, LAYER_HEIGHT), dtype=np.uint8)
@@ -47,7 +47,7 @@ class ParallelBattlesnakeEnv(VecEnv):
         self.n_threads = n_threads
         self.n_envs = n_envs
         self.device = device
-        self.ptr = env_new(self.n_threads, self.n_envs, self.n_opponents+1)
+        self.ptr = env_new(self.n_threads, self.n_envs, self.n_opponents+1, self.fixed_orientation)
         super(ParallelBattlesnakeEnv, self).__init__(self.n_envs, self.observation_space, self.action_space)
         self.reset()
 
@@ -108,7 +108,7 @@ class ParallelBattlesnakeEnv(VecEnv):
 
 class BattlesnakeEnv(VecEnv):
     """Multi-Threaded Multi-Agent Snake Environment"""
-    def __init__(self, n_threads=4, n_envs=16, opponents=[], device=torch.device('cpu')):
+    def __init__(self, n_threads=4, n_envs=16, opponents=[], device=torch.device('cpu'), fixed_orientation=False):
         # Define action and observation space
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=0,high=255, shape=(NUM_LAYERS, LAYER_WIDTH, LAYER_HEIGHT), dtype=np.uint8)
@@ -117,7 +117,8 @@ class BattlesnakeEnv(VecEnv):
         self.n_threads = n_threads
         self.n_envs = n_envs
         self.device = device
-        self.ptr = env_new(self.n_threads, self.n_envs, self.n_opponents+1)
+        self.fixed_orientation = fixed_orientation
+        self.ptr = env_new(self.n_threads, self.n_envs, self.n_opponents+1, self.fixed_orientation)
         super(BattlesnakeEnv, self).__init__(self.n_envs, self.observation_space, self.action_space)
         self.reset()
 

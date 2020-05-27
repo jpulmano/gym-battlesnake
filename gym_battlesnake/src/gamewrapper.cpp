@@ -30,6 +30,10 @@ class GameWrapper {
 
   /* Randomly* orient the board by flipping in x and y */
   unsigned orientation(unsigned game_id, unsigned turn, unsigned player_id) {
+    if (fixed_orientation_) {
+      return 0;
+    }
+
     return std::hash<unsigned>{}(game_id) ^ player_id ^
            std::hash<unsigned>{}(turn);
   }
@@ -139,9 +143,9 @@ class GameWrapper {
   }
 
 public:
-  GameWrapper(unsigned n_threads, unsigned n_envs, unsigned n_models)
+  GameWrapper(unsigned n_threads, unsigned n_envs, unsigned n_models, bool fixed_orientation)
       : n_threads_(n_threads), n_envs_(n_envs), n_models_(n_models),
-        threadpool_(n_threads) {
+        threadpool_(n_threads), fixed_orientation_(fixed_orientation) {
     // 1. Create envs
     envs_.resize(n_envs, nullptr);
     // 2. Allocate obs and act arrays
@@ -264,6 +268,7 @@ public:
 
   unsigned n_threads_, n_envs_, n_models_;
   ThreadPool threadpool_;
+  bool fixed_orientation_;
   std::vector<std::shared_ptr<GameInstance>> envs_;
   std::vector<uint8_t> obss_;
   std::vector<uint8_t> acts_;
@@ -271,8 +276,8 @@ public:
 };
 
 extern "C" {
-GameWrapper *env_new(unsigned n_threads, unsigned n_envs, unsigned n_models) {
-  return new GameWrapper(n_threads, n_envs, n_models);
+GameWrapper *env_new(unsigned n_threads, unsigned n_envs, unsigned n_models, bool fixed_orientation) {
+  return new GameWrapper(n_threads, n_envs, n_models, fixed_orientation);
 }
 void env_delete(GameWrapper *p) { delete p; }
 void env_reset(GameWrapper *p) { p->reset(); }
