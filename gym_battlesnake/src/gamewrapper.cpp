@@ -29,8 +29,8 @@ struct info {
 class GameWrapper {
 
   /* Randomly* orient the board by flipping in x and y */
-  unsigned orientation(unsigned game_id, unsigned turn, unsigned player_id) {
-    if (fixed_orientation_ > 0u) {
+  unsigned orientation(unsigned game_id, unsigned turn, unsigned player_id, unsigned fixed) {
+    if (fixed > 0u) {
       return 0u;
     }
 
@@ -144,8 +144,8 @@ class GameWrapper {
 
 public:
   GameWrapper(unsigned n_threads, unsigned n_envs, unsigned n_models, unsigned fixed_orientation)
-      : n_threads_(n_threads), n_envs_(n_envs), n_models_(n_models),
-        threadpool_(n_threads), fixed_orientation_(fixed_orientation) {
+      : n_threads_(n_threads), n_envs_(n_envs), n_models_(n_models), fixed_orientation_(fixed_orientation),
+        threadpool_(n_threads) {
     // 1. Create envs
     envs_.resize(n_envs, nullptr);
     // 2. Allocate obs and act arrays
@@ -179,7 +179,7 @@ public:
         auto state = gi->getstate();
         for (unsigned m{0}; m < n_models_; ++m) {
           writeobs(m, ii, ids[m], state,
-                   orientation(gi->gameid(), gi->turn(), ids[m]));
+                   orientation(gi->gameid(), gi->turn(), ids[m], fixed_orientation_));
         }
         info_[ii].health_ = 100;
         info_[ii].length_ = PLAYER_STARTING_LENGTH;
@@ -207,7 +207,7 @@ public:
         for (unsigned m{0}; m < n_models_; ++m) {
           gi->setplayermove(
               ids[m],
-              getaction(m, ii, orientation(gi->gameid(), gi->turn(), ids[m])));
+              getaction(m, ii, orientation(gi->gameid(), gi->turn(), ids[m], fixed_orientation_)));
         }
 
         // Get player length before step
@@ -259,7 +259,7 @@ public:
         // Write states into observation arrays
         for (unsigned m{0}; m < n_models_; ++m) {
           writeobs(m, ii, ids[m], gi->getstate(),
-                   orientation(gi->gameid(), gi->turn(), ids[m]));
+                   orientation(gi->gameid(), gi->turn(), ids[m], fixed_orientation_));
         }
       });
     }
