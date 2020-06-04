@@ -38,7 +38,7 @@ LAYER_HEIGHT = 23
 class ParallelBattlesnakeEnv(VecEnv):
     """Multi-Threaded Multi-Agent Snake Environment"""
     """ Parallel version assumes self play with same policy, so it can batch observation calculations better """
-    def __init__(self, n_threads=4, n_envs=16, n_opponents=7, opponent=None, device='cpu', fixed_orientation=False):
+    def __init__(self, n_threads=4, n_envs=16, n_opponents=7, opponent=None, device=torch.device('cpu'), fixed_orientation=False, dtype=torch.float32):
         # Define action and observation space
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=0,high=255, shape=(NUM_LAYERS, LAYER_WIDTH, LAYER_HEIGHT), dtype=np.uint8)
@@ -49,6 +49,7 @@ class ParallelBattlesnakeEnv(VecEnv):
         self.device = device
         self.fixed_orientation = fixed_orientation
         self.ptr = env_new(self.n_threads, self.n_envs, self.n_opponents+1, self.fixed_orientation)
+        self.dtype = dtype
         super(ParallelBattlesnakeEnv, self).__init__(self.n_envs, self.observation_space, self.action_space)
         self.reset()
 
@@ -63,7 +64,7 @@ class ParallelBattlesnakeEnv(VecEnv):
         for i in range(1,self.n_opponents+1):
             all_obs.append(self.getobs(i))
         obs = np.vstack(all_obs)
-        obs = torch.tensor(obs, dtype=torch.float32).to(self.device)
+        obs = torch.tensor(obs, dtype=self.dtype).to(self.device)
         with torch.no_grad():
             acts,_ = self.opponent.predict(obs, deterministic=True)
         acts = acts.view(self.n_opponents, self.n_envs).cpu().detach().numpy().astype(np.uint8)
