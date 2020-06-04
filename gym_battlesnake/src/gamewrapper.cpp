@@ -38,14 +38,91 @@ class GameWrapper {
            std::hash<unsigned>{}(turn);
   }
 
-  char getaction(unsigned model_i, unsigned env_i, unsigned ori) {
+  char getaction(unsigned model_i, unsigned env_i, unsigned ori, unsigned player_id, State gamestate) {
     const char moves[4] = {'u', 'd', 'l', 'r'};
     auto index = acts_[model_i * n_envs_ + env_i];
     char action = moves[index];
-    if ((ori & 1) && (action == 'l' || action == 'r'))
-      action = action == 'l' ? 'r' : 'l';
-    if ((ori & 2) && (action == 'u' || action == 'd'))
-      action = action == 'd' ? 'u' : 'd';
+    auto &players = std::get<1>(gamestate);
+    Tile head, neck;
+    const auto it = players.find(player_id);
+    if (it != players.end()) {
+      head = it->second.body_.front();
+      neck = *std::next(it->second.body_.begin(), 1);
+    } else {
+      std::abort();
+    }
+    auto flip_y = false;
+    auto transpose = false;
+    auto transpose_rotate = false;
+    int diff_x = head.first - neck.first;
+    int diff_y = head.second - neck.second;
+
+    // We'll rotate the inputs such that all snakes face up
+    if (use_symmetry_) {
+      // Disable orientation rotations
+      // YOU CAN ONLY DO THIS IF THE GAME BOARD IS SQUARE
+      if (diff_x == 0) {
+        // Check if head is above neck
+        if (diff_y == 1) {
+          flip_y = true;
+        }
+      } else {
+        // We're going to need a transpose here
+        if (diff_x == 1) {
+          // head is on the right
+          transpose_rotate = true;
+        }
+        if (diff_x == -1) {
+          transpose = true;
+        }
+      }
+    }
+
+    if (use_symmetry_) {
+      if (transpose) {
+        switch (action) {
+          case 'l':
+            return 'u';
+          case 'r':
+            return 'd'; // this is the bad move
+          case 'u':
+            return 'l';
+          case 'd':
+            return 'r';
+        }
+      }
+      if (transpose_rotate) {
+        switch (action) {
+          case 'l':
+            return 'u';
+          case 'r':
+            return 'd'; // this is the bad move
+          case 'u':
+            return 'r';
+          case 'd':
+            return 'l';
+        }
+      }
+      if (flip_y) {
+        switch (action) {
+          case 'l':
+            return 'l';
+          case 'r':
+            return 'r';
+          case 'u':
+            return 'd'; // this is the bad move
+          case 'd':
+            return 'u';
+        }
+      }
+    }
+
+    if (!use_symmetry_) {
+      if ((ori & 1) && (action == 'l' || action == 'r'))
+        action = action == 'l' ? 'r' : 'l';
+      if ((ori & 2) && (action == 'u' || action == 'd'))
+        action = action == 'd' ? 'u' : 'd';
+    }
     return action;
   }
 
@@ -65,20 +142,84 @@ class GameWrapper {
         layer10-16: Alive count
     */
     auto &players = std::get<1>(gamestate);
-    Tile head;
+    Tile head, neck;
     const auto it = players.find(player_id);
     if (it != players.end()) {
       head = it->second.body_.front();
+      neck = *std::next(it->second.body_.begin(), 1);
     } else {
       std::abort();
     }
 
-    auto assign = [this, model_i, env_i, head, ori](const Tile &xy, unsigned l,
-                                                    uint8_t val) {
-      int x = (int(xy.first) - int(head.first)) * ((ori & 1) ? -1 : 1);
-      int y = (int(xy.second) - int(head.second)) * ((ori & 2) ? -1 : 1);
+    auto flip_y = false;
+    auto transpose = false;
+    auto transpose_rotate = false;
+    int diff_x = head.first - neck.first;
+    int diff_y = head.second - neck.second;
+
+    // We'll rotate the inputs such that all snakes face up
+    if (use_symmetry_) {
+      // Disable orientation rotations
+      ori = 0;
+      // YOU CAN ONLY DO THIS IF THE GAME BOARD IS SQUARE
+      if (diff_x == 0) {
+        // Check if head is above neck
+        if (diff_y == 1) {
+          flip_y = true;
+        }
+      } else {
+        // We're going to need a transpose here
+        if (diff_x == 1) {
+          // head is on the right
+          transpose_rotate = true;
+        }
+        if (diff_x == -1) {
+          transpose = true;
+        }
+      }
+    }
+
+    auto get_x = [this, head, flip_y, transpose, transpose_rotate, ori](const Tile &xy) {
+      int x = (int(xy.first) - int(head.first)) * ((ori & 1) ? -1 : 1); 
+      int y = (int(xy.second) - int(head.second))* ((ori & 2) ? -1 : 1); 
       x += (LAYER_WIDTH / 2);
       y += (LAYER_HEIGHT / 2);
+
+      if (transpose) {
+        return y;
+      }
+      if (transpose_rotate) {
+        return y;
+      }
+      // Default case, return x
+      return x;
+    };
+
+    auto get_y = [this, head, transpose, transpose_rotate, flip_y, ori](const Tile &xy) {
+      int x = (int(xy.first) - int(head.first)); 
+      int y = (int(xy.second) - int(head.second));
+      x += (LAYER_WIDTH / 2);
+      y += (LAYER_HEIGHT / 2);
+
+      if (transpose) {
+        return x;
+      }
+      if (transpose_rotate) {
+        return LAYER_HEIGHT - x - 1;
+      }
+      if (flip_y) {
+        return LAYER_HEIGHT - y - 1;
+      }
+
+      // Default case, return y
+      return y;
+    };
+
+    auto assign = [this, model_i, env_i, head, ori, get_x, get_y](const Tile &xy, unsigned l,
+                                                    uint8_t val) {
+      int x = get_x(xy);
+      int y = get_y(xy);
+      
       if (x > 0 && x < LAYER_WIDTH && y > 0 && y < LAYER_HEIGHT)
         obss_[ model_i*(n_envs_*OBS_SIZE) + env_i*OBS_SIZE + l*(LAYER_HEIGHT*LAYER_WIDTH) + x*LAYER_HEIGHT + y] += val;
     };
@@ -143,7 +284,7 @@ class GameWrapper {
   }
 
 public:
-  GameWrapper(unsigned n_threads, unsigned n_envs, unsigned n_models, bool fixed_orientation)
+  GameWrapper(unsigned n_threads, unsigned n_envs, unsigned n_models, bool fixed_orientation, bool use_symmetry)
       : n_threads_(n_threads), n_envs_(n_envs), n_models_(n_models),
         threadpool_(n_threads) {
     // 1. Create envs
@@ -153,6 +294,7 @@ public:
     acts_.resize(n_models * n_envs);
     info_.resize(n_envs);
     fixed_orientation_ = fixed_orientation;
+    use_symmetry_ = use_symmetry;
     // 3. Reset envs
     reset();
   }
@@ -208,7 +350,7 @@ public:
         for (unsigned m{0}; m < n_models_; ++m) {
           gi->setplayermove(
               ids[m],
-              getaction(m, ii, orientation(gi->gameid(), gi->turn(), ids[m], fixed_orientation_)));
+              getaction(m, ii, orientation(gi->gameid(), gi->turn(), ids[m], fixed_orientation_), ids[m], gi->getstate()));
         }
 
         // Get player length before step
@@ -269,7 +411,7 @@ public:
 
   unsigned n_threads_, n_envs_, n_models_;
   ThreadPool threadpool_;
-  bool fixed_orientation_;
+  bool fixed_orientation_, use_symmetry_;
   std::vector<std::shared_ptr<GameInstance>> envs_;
   std::vector<uint8_t> obss_;
   std::vector<uint8_t> acts_;
@@ -277,8 +419,8 @@ public:
 };
 
 extern "C" {
-GameWrapper *env_new(unsigned n_threads, unsigned n_envs, unsigned n_models, bool fixed_orientation) {
-  return new GameWrapper(n_threads, n_envs, n_models, fixed_orientation);
+GameWrapper *env_new(unsigned n_threads, unsigned n_envs, unsigned n_models, bool fixed_orientation, bool use_symmetry) {
+  return new GameWrapper(n_threads, n_envs, n_models, fixed_orientation, use_symmetry);
 }
 void env_delete(GameWrapper *p) { delete p; }
 void env_reset(GameWrapper *p) { p->reset(); }

@@ -23,7 +23,7 @@ try:
     gamelib = ctypes.cdll.LoadLibrary(str(pathlib.Path(__file__).with_name('libgymbattlesnake.so')))
 except:
     gamelib = ctypes.cdll.LoadLibrary(str(pathlib.Path(__file__).with_name('libgymbattlesnake.dylib')))
-env_new = wrap_function(gamelib, 'env_new', ctypes.c_void_p, [ctypes.c_uint,ctypes.c_uint,ctypes.c_uint,ctypes.c_bool])
+env_new = wrap_function(gamelib, 'env_new', ctypes.c_void_p, [ctypes.c_uint,ctypes.c_uint,ctypes.c_uint,ctypes.c_bool, ctypes.c_bool])
 env_delete = wrap_function(gamelib, 'env_delete', None, [ctypes.c_void_p])
 env_reset = wrap_function(gamelib, 'env_reset', None, [ctypes.c_void_p])
 env_step = wrap_function(gamelib, 'env_step', None, [ctypes.c_void_p])
@@ -38,7 +38,7 @@ LAYER_HEIGHT = 23
 class ParallelBattlesnakeEnv(VecEnv):
     """Multi-Threaded Multi-Agent Snake Environment"""
     """ Parallel version assumes self play with same policy, so it can batch observation calculations better """
-    def __init__(self, n_threads=4, n_envs=16, n_opponents=7, opponent=None, device=torch.device('cpu'), fixed_orientation=False, dtype=torch.float32):
+    def __init__(self, n_threads=4, n_envs=16, n_opponents=7, opponent=None, device=torch.device('cpu'), fixed_orientation=False, use_symmetry=False, dtype=torch.float32):
         # Define action and observation space
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=0,high=255, shape=(NUM_LAYERS, LAYER_WIDTH, LAYER_HEIGHT), dtype=np.uint8)
@@ -48,7 +48,10 @@ class ParallelBattlesnakeEnv(VecEnv):
         self.n_envs = n_envs
         self.device = device
         self.fixed_orientation = fixed_orientation
-        self.ptr = env_new(self.n_threads, self.n_envs, self.n_opponents+1, self.fixed_orientation)
+        self.use_symmetry = use_symmetry
+        if use_symmetry and not fixed_orientation:
+            raise ValueError("symmetry must be used with fixed orientation")
+        self.ptr = env_new(self.n_threads, self.n_envs, self.n_opponents+1, self.fixed_orientation, self.use_symmetry)
         self.dtype = dtype
         super(ParallelBattlesnakeEnv, self).__init__(self.n_envs, self.observation_space, self.action_space)
         self.reset()
@@ -61,8 +64,8 @@ class ParallelBattlesnakeEnv(VecEnv):
         np.copyto(self.getact(0), np.asarray(actions,dtype=np.uint8))
         # Get observations for each opponent and predict actions
         all_obs = []
-        for i in range(1,self.n_opponents+1):
-            all_obs.append(self.getobs(i))
+        for i in range(self.n_opponents):
+            all_obs.append(self.getobs(i+1))
         obs = np.vstack(all_obs)
         obs = torch.tensor(obs, dtype=self.dtype).to(self.device)
         with torch.no_grad():
@@ -110,7 +113,7 @@ class ParallelBattlesnakeEnv(VecEnv):
 
 class BattlesnakeEnv(VecEnv):
     """Multi-Threaded Multi-Agent Snake Environment"""
-    def __init__(self, n_threads=4, n_envs=16, opponents=[], device=torch.device('cpu'), fixed_orientation=False):
+    def __init__(self, n_threads=4, n_envs=16, opponents=[], device=torch.device('cpu'), fixed_orientation=False, use_symmetry=False):
         # Define action and observation space
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(low=0,high=255, shape=(NUM_LAYERS, LAYER_WIDTH, LAYER_HEIGHT), dtype=np.uint8)
@@ -120,7 +123,10 @@ class BattlesnakeEnv(VecEnv):
         self.n_envs = n_envs
         self.device = device
         self.fixed_orientation = fixed_orientation
-        self.ptr = env_new(self.n_threads, self.n_envs, self.n_opponents+1, self.fixed_orientation)
+        self.use_symmetry = use_symmetry
+        if use_symmetry and not fixed_orientation:
+            raise ValueError("symmetry must be used with fixed orientation")
+        self.ptr = env_new(self.n_threads, self.n_envs, self.n_opponents+1, self.fixed_orientation, self.use_symmetry)
         super(BattlesnakeEnv, self).__init__(self.n_envs, self.observation_space, self.action_space)
         self.reset()
 
