@@ -196,8 +196,8 @@ class GameWrapper {
     };
 
     auto get_y = [this, head, transpose, transpose_rotate, flip_y, ori](const Tile &xy) {
-      int x = (int(xy.first) - int(head.first)); 
-      int y = (int(xy.second) - int(head.second));
+      int x = (int(xy.first) - int(head.first)) * ((ori & 1) ? -1 : 1);
+      int y = (int(xy.second) - int(head.second)) * ((ori & 2) ? -1 : 1);
       x += (LAYER_WIDTH / 2);
       y += (LAYER_HEIGHT / 2);
 
