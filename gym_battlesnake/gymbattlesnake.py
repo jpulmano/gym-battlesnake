@@ -111,6 +111,22 @@ class ParallelBattlesnakeEnv(VecEnv):
         actptr = env_actptr(self.ptr, agent_i)
         return np.ctypeslib.as_array(actptr, shape=(self.n_envs,))
 
+    def get_attr(self, attr_name, indices=None):
+        pass
+
+    def set_attr(self, attr_name, value, indices=None):
+        pass
+
+    def env_method(self,
+                   method_name,
+                   *method_args,
+                   indices=None,
+                   **method_kwargs):
+        pass
+
+    def seed(self, seed=None):
+        pass
+
 class BattlesnakeEnv(VecEnv):
     """Multi-Threaded Multi-Agent Snake Environment"""
     def __init__(self, n_threads=4, n_envs=16, opponents=[], device=torch.device('cpu'), fixed_orientation=False, use_symmetry=False):
@@ -178,3 +194,19 @@ class BattlesnakeEnv(VecEnv):
     def getact(self, agent_i):
         actptr = env_actptr(self.ptr, agent_i)
         return np.ctypeslib.as_array(actptr, shape=(self.n_envs,))
+
+    def get_attr(self, attr_name, indices=None):
+        pass
+
+    def set_attr(self, attr_name, value, indices=None):
+        pass
+
+    def env_method(self,
+                   method_name,
+                   *method_args,
+                   indices=None,
+                   **method_kwargs):
+        pass
+
+    def seed(self, seed=None):
+        pass

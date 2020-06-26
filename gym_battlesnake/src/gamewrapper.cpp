@@ -205,7 +205,7 @@ class GameWrapper {
         return x;
       }
       if (transpose_rotate) {
-        return LAYER_HEIGHT - x - 1;
+        return LAYER_WIDTH - x - 1;
       }
       if (flip_y) {
         return LAYER_HEIGHT - y - 1;
