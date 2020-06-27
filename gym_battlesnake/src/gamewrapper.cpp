@@ -220,7 +220,7 @@ class GameWrapper {
       int x = get_x(xy);
       int y = get_y(xy);
       
-      if (x > 0 && x < LAYER_WIDTH && y > 0 && y < LAYER_HEIGHT)
+      if (x >= 0 && x < LAYER_WIDTH && y >= 0 && y < LAYER_HEIGHT)
         obss_[ model_i*(n_envs_*OBS_SIZE) + env_i*OBS_SIZE + l*(LAYER_HEIGHT*LAYER_WIDTH) + x*LAYER_HEIGHT + y] += val;
     };
 
