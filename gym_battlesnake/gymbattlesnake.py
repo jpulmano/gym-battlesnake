@@ -93,6 +93,7 @@ class ParallelBattlesnakeEnv(VecEnv):
                     
                     # Added: Give +1.0 reward for every kill
                     if infoptr[i].kill_count > 0:
+                        print("FOUND A KILL COUNT: ", infoptr[i].kill_count)
                         kills = infoptr[i].kill_count
                         rews[i] += kills
                         info[i]['episode']['kills'] = kills 

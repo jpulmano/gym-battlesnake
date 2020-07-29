@@ -21,10 +21,10 @@ struct info {
   unsigned turn_;
   unsigned alive_count_;
   unsigned death_reason_;
-  unsigned kill_count_; // Added
   bool alive_;
   bool ate_;
   bool over_;
+  unsigned kill_count_; // Added
 };
 
 class GameWrapper {
