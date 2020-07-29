@@ -21,6 +21,7 @@ struct info {
   unsigned turn_;
   unsigned alive_count_;
   unsigned death_reason_;
+  unsigned kill_count_; // Added
   bool alive_;
   bool ate_;
   bool over_;
@@ -332,6 +333,7 @@ public:
         info_[ii].over_ = false;
         info_[ii].alive_count_ = n_models_;
         info_[ii].death_reason_ = DEATH_NONE;
+        info_[ii].kill_count_ = 0; // Added
       });
     }
     threadpool_.wait();
@@ -385,6 +387,7 @@ public:
         info_[ii].over_ = done;
         info_[ii].alive_count_ = count;
         info_[ii].death_reason_ = it->second.death_reason_;
+        info_[ii].kill_count_ = it->second.kill_count_; // Added
 
         // Reset game if over
         if (done) {

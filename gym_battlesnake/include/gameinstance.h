@@ -29,12 +29,13 @@ namespace std {
 }
 
 struct Player {
-	Player(unsigned id) : id_(id), alive_(true), health_(100), move_('u'), turn_(0) {}
+	Player(unsigned id) : id_(id), alive_(true), health_(100), move_('u'), turn_(0), kill_count_(0) {}
 	unsigned id_;
 	bool alive_;
 	unsigned health_;
 	char move_;
 	unsigned turn_;
+	unsigned kill_count_; // Added
 	unsigned death_reason_;
 	std::list<Tile> body_;
 	bool operator==(const Player& a) const { return id_ == a.id_; }

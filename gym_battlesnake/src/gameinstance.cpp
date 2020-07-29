@@ -165,6 +165,9 @@ void GameInstance::step() {
         if (other.second.body_.size() >= p.second.body_.size()) {
           players_to_kill.insert(p.second.id_);
           p.second.death_reason_ = DEATH_EATEN;
+
+          // Added: Increase other snake's kill count
+          ++other.second.kill_count_;
         }
       }
     }
