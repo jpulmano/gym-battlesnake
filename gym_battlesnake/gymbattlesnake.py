@@ -91,8 +91,12 @@ class ParallelBattlesnakeEnv(VecEnv):
                 if infoptr[i].alive:
                     rews[i] += 1.0
                     
-                    # Added: Give +1.0 reward for every kill!
-                    rews[i] += infoptr[i].kill_count
+                    # Added: Give +1.0 reward for every kill
+                    kills = infoptr[i].kill_count
+                    rews[i] += kills
+                     
+                    # TODO: Remove this dictionary (initially for debugging purposes)
+                    info[i]['episode']['kills'] = kills 
                     
                     info[i]['episode']['r'] = rews[i]
                 else:
