@@ -153,7 +153,7 @@ void GameInstance::step() {
     if (!p.second.alive_)
       continue;
 
-    for (const auto &other : players_) {
+    for (auto &other : players_) {
       if (!other.second.alive_)
         continue;
       if (p.second.id_ == other.second.id_)
