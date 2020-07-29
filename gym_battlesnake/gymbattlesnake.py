@@ -16,7 +16,7 @@ def wrap_function(lib, funcname, restype, argtypes):
 
 class info(ctypes.Structure):
     _fields_ = [('health', ctypes.c_uint), ('length', ctypes.c_uint), ('turn', ctypes.c_uint), ('alive_count', ctypes.c_uint), ('death_reason', ctypes.c_uint),
-        ('alive', ctypes.c_bool), ('ate', ctypes.c_bool), ('over', ctypes.c_bool), ('kill_count_', ctypes.c_uint)] # Add kill_count
+        ('alive', ctypes.c_bool), ('ate', ctypes.c_bool), ('over', ctypes.c_bool), ('kill_count', ctypes.c_uint)] # Add kill_count
 
 gamelib = None
 try:
@@ -94,6 +94,7 @@ class ParallelBattlesnakeEnv(VecEnv):
                     # Added: Give +1.0 reward for every kill
                     kills = infoptr[i].kill_count
                     rews[i] += kills
+                    print("KILLS: ", kills)
                      
                     # TODO: Remove this dictionary (initially for debugging purposes)
                     info[i]['episode']['kills'] = kills 
