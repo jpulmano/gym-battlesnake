@@ -88,18 +88,22 @@ class ParallelBattlesnakeEnv(VecEnv):
             if infoptr[i].over:
                 dones[i] = True
                 info[i]['episode'] = {}
+                kills = infoptr[i].kill_count
+                
                 if infoptr[i].alive:
+                    # Reward for winning
                     rews[i] += 1.0
                     
-                    # Added: Give +1.0 reward for every kill
-                    kills = infoptr[i].kill_count
-                    rews[i] += kills
-                    info[i]['episode']['kills'] = kills 
+                    # Added: Give a 0.25 reward for every kill
+                    rews[i] += kills * 0.25
                     
                     info[i]['episode']['r'] = rews[i]
                 else:
                     rews[i] -= 1.0
                     info[i]['episode']['r'] = rews[i]
+
+                # Save kills and length
+                info[i]['episode']['kills'] = kills
                 info[i]['episode']['l'] = infoptr[i].turn
 
         return self.getobs(0), rews, dones, info
@@ -178,19 +182,24 @@ class BattlesnakeEnv(VecEnv):
             if infoptr[i].over:
                 dones[i] = True
                 info[i]['episode'] = {}
+                kills = infoptr[i].kill_count
+                
                 if infoptr[i].alive:
+                    # Reward for winning
                     rews[i] += 1.0
                     
-                    # Added: Give +1.0 reward for every kill
-                    kills = infoptr[i].kill_count
-                    rews[i] += kills
-                    info[i]['episode']['kills'] = kills 
+                    # Added: Give a 0.25 reward for every kill
+                    rews[i] += kills * 0.25
                     
                     info[i]['episode']['r'] = rews[i]
                 else:
                     rews[i] -= 1.0
                     info[i]['episode']['r'] = rews[i]
+
+                # Save kills and length
+                info[i]['episode']['kills'] = kills
                 info[i]['episode']['l'] = infoptr[i].turn
+
 
         return self.getobs(0), rews, dones, info
 
